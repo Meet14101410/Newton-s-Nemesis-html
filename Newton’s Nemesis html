@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Newton's Nemesis — Mini Physics Game</title>
+  <style>
+    html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto}
+    .wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px}
+    canvas{background:linear-gradient(#0b1220,#112233);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+    .hud{color:#dfefff;font-size:14px}
+    button{padding:8px 12px;border-radius:6px;border:0;background:#1e90ff;color:white;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h3 style="margin:0;color:#e7f3ff">Newton's Nemesis</h3>
+    <div class="hud">
+      <span id="score">Score: 0</span>
+      &nbsp;•&nbsp;
+      <span id="info">Space — jump / R — restart</span>
+    </div>
+    <canvas id="game" width="600" height="360"></canvas>
+    <div style="display:flex;gap:8px">
+      <button id="start">Start</button>
+      <button id="pause">Pause</button>
+      <button id="reset">Reset</button>
+    </div>
+  </div>
+
+  <script>
+    // Short single-file physics concept game
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    // Player (a simple ball) with gravity and jump
+    const player = {x:80,y:200,r:16,vy:0,onGround:false};
+    const gravity = 0.6; // acceleration
+    const jumpImpulse = -12;
+
+    let obstacles = []; // simple rectangular obstacles (nemeses)
+    let tick=0, score=0, running=false, paused=false;
+
+    function spawnObstacle(){
+      const h = 30 + Math.random()*80;
+      const gapY = H - h;
+      obstacles.push({x:W, w:24 + Math.random()*24, h:h, y:gapY, vx:-3 - Math.random()*1.5});
+    }
+
+    function reset(){
+      obstacles = []; tick=0; score=0; player.y=200; player.vy=0; running=false; paused=false;
+      document.getElementById('score').textContent = 'Score: 0';
+      draw();
+    }
+
+    function start(){ running = true; paused = false; loop(); }
+    function togglePause(){ paused = !paused; }
+
+    function loop(){
+      if(!running || paused) return; // will be resumed via start or loop call
+      update(); draw();
+      requestAnimationFrame(loop);
+    }
+
+    function update(){
+      tick++;
+      // spawn occasionally
+      if(tick % 90 === 0) spawnObstacle();
+      // apply gravity
+      player.vy += gravity;
+      player.y += player.vy;
+      // ground collision
+      const groundY = H - 24;
+      if(player.y + player.r > groundY){ player.y = groundY - player.r; player.vy = 0; player.onGround = true; }
+      else player.onGround = false;
+
+      // update obstacles
+      for(let i=obstacles.length-1;i>=0;i--){
+        const ob = obstacles[i]; ob.x += ob.vx;
+        // off screen
+        if(ob.x + ob.w < -50) { obstacles.splice(i,1); score++; document.getElementById('score').textContent = 'Score: ' + score; }
+        // collision simple circle-rect
+        if(collideCircleRect(player, ob.x, ob.y, ob.w, ob.h)){
+          running = false; // game over
+          document.getElementById('info').textContent = 'Game Over — press R to restart';
+        }
+      }
+    }
+
+    function collideCircleRect(c, rx, ry, rw, rh){
+      // find closest point
+      const cx = Math.max(rx, Math.min(c.x, rx+rw));
+      const cy = Math.max(ry, Math.min(c.y, ry+rh));
+      const dx = c.x - cx, dy = c.y - cy;
+      return (dx*dx + dy*dy) <= (c.r*c.r);
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      // background stars
+      for(let i=0;i<60;i++){
+        ctx.fillStyle='rgba(255,255,255,0.03)';
+        ctx.fillRect((i*47)%W, (i*31)%H, 2,2);
+      }
+      // ground
+      ctx.fillStyle = '#0f2a1f';
+      ctx.fillRect(0, H-24, W, 24);
+
+      // player
+      ctx.beginPath();
+      ctx.fillStyle = '#ffd66b';
+      ctx.arc(player.x, player.y, player.r, 0, Math.PI*2);
+      ctx.fill();
+      // trail (simple)
+      ctx.fillStyle = 'rgba(255,214,107,0.18)';
+      ctx.fillRect(player.x - player.r - 6, player.y - 2, 6, 4);
+
+      // obstacles
+      ctx.fillStyle = '#ff6b6b';
+      obstacles.forEach(ob=> ctx.fillRect(ob.x, ob.y, ob.w, ob.h));
+
+      // HUD small
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillRect(10,10,120,36);
+    }
+
+    // controls
+    window.addEventListener('keydown', e=>{
+      if(e.code === 'Space'){ if(running){ if(player.onGround){ player.vy = jumpImpulse; player.onGround=false; } } else { start(); } }
+      if(e.key === 'r' || e.key === 'R'){ reset(); }
+      if(e.key === 'p' || e.key === 'P'){ togglePause(); if(!paused && running) loop(); }
+    });
+
+    document.getElementById('start').addEventListener('click', ()=>{ if(!running) start(); else paused=false; if(running) loop(); });
+    document.getElementById('pause').addEventListener('click', ()=>{ togglePause(); });
+    document.getElementById('reset').addEventListener('click', reset);
+
+    // initial draw
+    draw();
+  </script>
+</body>
+</html>
