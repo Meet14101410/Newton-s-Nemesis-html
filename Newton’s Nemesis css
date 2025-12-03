@@ -1,0 +1,13 @@
+/* Short CSS for Newton's Nemesis */
+:root{--bg1:#0b1220;--bg2:#112233;--accent:#1e90ff;--muted:#dfefff}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--muted)}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px}
+canvas{width:100%;max-width:900px;height:auto;border-radius:10px;box-shadow:0 8px 30px rgba(2,6,23,0.6);background:transparent}
+h3{margin:0;font-size:20px;letter-spacing:0.4px}
+.hud{font-size:14px;color:var(--muted);opacity:0.95}
+button{appearance:none;border:0;padding:8px 14px;border-radius:8px;background:linear-gradient(180deg,var(--accent),#1676d6);color:#fff;cursor:pointer;font-weight:600}
+button:active{transform:translateY(1px)}
+#score{font-weight:700}
+/* responsive */
+@media (max-width:520px){h3{font-size:18px}.hud{font-size:13px}button{padding:8px 10px}}
