@@ -1,0 +1,62 @@
+// Short JS for Newton's Nemesis
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const W=canvas.width,H=canvas.height;
+
+const player={x:80,y:200,r:16,vy:0,onGround:false};
+const gravity=0.6,jumpImpulse=-12;
+let obstacles=[],tick=0,score=0,running=false,paused=false;
+
+function spawn(){
+  const h=30+Math.random()*80;
+  obstacles.push({x:W,w:20+Math.random()*30,h:h,y:H-h,vx:-3-Math.random()*2});
+}
+
+function reset(){
+  obstacles=[];tick=0;score=0;
+  player.y=200;player.vy=0;
+  running=false;paused=false;
+  draw();
+}
+
+function start(){running=true;paused=false;loop();}
+function toggle(){paused=!paused;}
+
+function loop(){if(!running||paused)return;update();draw();requestAnimationFrame(loop);} 
+
+function update(){
+  tick++;
+  if(tick%90===0)spawn();
+  player.vy+=gravity;
+  player.y+=player.vy;
+  const ground=H-24;
+  if(player.y+player.r>ground){player.y=ground-player.r;player.vy=0;player.onGround=true;}else player.onGround=false;
+
+  for(let i=obstacles.length-1;i>=0;i--){
+    let o=obstacles[i];o.x+=o.vx;
+    if(o.x+o.w<0){obstacles.splice(i,1);score++;}
+    if(hit(player,o))running=false;
+  }
+}
+
+function hit(c,o){
+  const cx=Math.max(o.x,Math.min(c.x,o.x+o.w));
+  const cy=Math.max(o.y,Math.min(c.y,o.y+o.h));
+  const dx=c.x-cx,dy=c.y-cy;
+  return(dx*dx+dy*dy)<=c.r*c.r;
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0f2a1f';ctx.fillRect(0,H-24,W,24);
+  ctx.beginPath();ctx.fillStyle='#ffd66b';ctx.arc(player.x,player.y,player.r,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#ff6b6b';obstacles.forEach(o=>ctx.fillRect(o.x,o.y,o.w,o.h));
+}
+
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'){if(running){if(player.onGround)player.vy=jumpImpulse;}else start();}
+  if(e.key==='r')reset();
+  if(e.key==='p'){toggle();if(!paused&&running)loop();}
+});
+
+draw();
